@@ -1,0 +1,201 @@
+#include <TinyGPS.h>
+#include <SoftwareSerial.h>
+#include <Wire.h>
+
+SoftwareSerial gpsSerial(8,9);//rx,tx
+TinyGPS gps;
+float lat = 0, lon = 0; //float lat = 28.5458,lon = 77.1703;
+// fix lat, long value
+
+int AP_=A0;
+int AN_=A1;
+int BP_=A2;
+int BN_=A3;
+String gd="";
+void setup() {
+ gpsSerial.begin(9600);
+ Wire.begin(8);                /* join i2c bus with address 8 */
+ Serial.begin(9600);           /* start serial for debug */
+ //Wire.onReceive(receiveEvent); /* register receive event */
+ Wire.onRequest(requestEvent); /* register request event */
+
+  //sensors
+  pinMode(AP_,INPUT);
+  pinMode(AN_,INPUT);
+  pinMode(BP_,INPUT);
+  pinMode(BN_,INPUT);
+ 
+}
+
+//###############################################################################//
+String latdata = GPS_DATA_lat();
+String londata = GPS_DATA_long();
+void loop() {
+  int AP=digitalRead(AP_);
+  int AN=digitalRead(AN_);
+  int BP=digitalRead(BP_);
+  int BN=digitalRead(BN_);
+  //GPS_DATA();
+  //gd = GPS_DATA();
+  Serial.println(gd);
+ if(AP==0){
+  A_POSITIVE();
+ }
+ 
+ else if(AN==0){
+  A_NEGATIVE();
+ }
+ 
+ else if(BP==0){
+  B_POSITIVE();
+ }
+ 
+ else if(BN==0){
+  B_NEGATIVE();
+ }
+ 
+ else{
+  Serial.println("Waiting For Blood Request...");
+ }
+ delay(500);
+}
+
+//###############################################################################//
+
+// function that executes whenever data is received from master
+void receiveEvent(int howMany) {
+ while (0 <Wire.available()) {
+    char c = Wire.read();      /* receive byte as a character */
+    Serial.print(c);           /* print the character */
+  }
+ Serial.println();             /* to newline */
+}
+
+//###############################################################################//
+
+// function that executes whenever data is requested from master
+void requestEvent() {
+ //Wire.write("Hello NodeMCU");  /*send string on request */
+
+  int AP=digitalRead(AP_);
+  int AN=digitalRead(AN_);
+  int BP=digitalRead(BP_);
+  int BN=digitalRead(BN_);
+  
+ if(AP==0){
+  Wire.write("A POSITIVE   ");
+ }
+ 
+ else if(AN==0){
+  Wire.write("A NEGATIVE   ");
+ }
+ 
+ else if(BP==0){
+  Wire.write("B POSITIVE   ");
+ }
+ 
+ else if(BN==0){
+  Wire.write("B NEGATIVE    ");
+ }
+ 
+ else{
+  Wire.write("Blood Request...");
+ }
+ delay(100);
+}
+
+//###############################################################################//
+
+void A_POSITIVE(){
+  Serial.println("'A POSITIVE' BLOOD NEEDED URGENTLY");
+  delay(100);
+  //GPS_DATA();
+
+  
+}
+
+//###############################################################################//
+
+void A_NEGATIVE(){
+  Serial.println("'A NEGATIVE' BLOOD NEEDED URGENTLY");
+  delay(100);
+  //GPS_DATA();
+
+  
+}
+
+//###############################################################################//
+
+void B_POSITIVE(){
+  Serial.println("'B POSITIVE' BLOOD NEEDED URGENTLY");
+  delay(100);
+  //GPS_DATA();
+
+  
+}
+
+//###############################################################################//
+
+void B_NEGATIVE(){
+  Serial.println("'B NEGATIVE' BLOOD NEEDED URGENTLY");
+  delay(100);
+  //GPS_DATA();
+
+  
+}
+
+//###############################################################################//
+
+String GPS_DATA_lat(){
+   while(gpsSerial.available()){ // check for gps data 
+  if(gps.encode(gpsSerial.read()))// encode gps data 
+  {  
+  gps.f_get_position(&lat,&lon); // get latitude and longitude 
+  // display position 
+  //lcd.clear(); 
+  //lcd.setCursor(1,0); 
+  //lcd.print("GPS Signal"); 
+  /*Serial.print("Position: "); 
+  Serial.print("Latitude:"); 
+  Serial.print(lat,6); 
+  Serial.print(";"); 
+  Serial.print("Longitude:"); 
+  Serial.println(lon,6); */ 
+ 
+  String latitude = String(lat,6); 
+  String longitude = String(lon,6); 
+  String located_value = (latitude+";"+longitude);
+ Serial.println(located_value); 
+ return located_value;
+  delay(500); 
+      }
+   }
+}
+
+//###############################################################################//
+
+String GPS_DATA_long(){
+   while(gpsSerial.available()){ // check for gps data 
+  if(gps.encode(gpsSerial.read()))// encode gps data 
+  {  
+  gps.f_get_position(&lat,&lon); // get latitude and longitude 
+  // display position 
+  //lcd.clear(); 
+  //lcd.setCursor(1,0); 
+  //lcd.print("GPS Signal"); 
+ /* Serial.print("Position: "); 
+  Serial.print("Latitude:"); 
+  Serial.print(lat,6); 
+  Serial.print(";"); 
+  Serial.print("Longitude:"); 
+  Serial.println(lon,6); */ 
+ 
+  String latitude = String(lat,6); 
+  String longitude = String(lon,6); 
+  String located_value = (latitude+";"+longitude);
+ Serial.println(located_value); 
+ return longitude;
+  delay(500); 
+      }
+   }
+}

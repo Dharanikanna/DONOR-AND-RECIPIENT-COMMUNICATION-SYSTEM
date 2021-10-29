@@ -1,0 +1,258 @@
+#include <Wire.h>
+#include <BearSSLHelpers.h>
+#include <CertStoreBearSSL.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266WiFiAP.h>
+#include <ESP8266WiFiGeneric.h>
+#include <ESP8266WiFiGratuitous.h>
+#include <ESP8266WiFiMulti.h>
+#include <ESP8266WiFiScan.h>
+#include <ESP8266WiFiSTA.h>
+#include <ESP8266WiFiType.h>
+#include <WiFiClient.h>
+#include <WiFiClientSecure.h>
+#include <WiFiClientSecureAxTLS.h>
+#include <WiFiClientSecureBearSSL.h>
+#include <WiFiServer.h>
+#include <WiFiServerSecure.h>
+#include <WiFiServerSecureAxTLS.h>
+#include <WiFiServerSecureBearSSL.h>
+#include <WiFiUdp.h>
+
+#include <LiquidCrystal.h>
+#include <SoftwareSerial.h>
+
+SoftwareSerial mySerial(3,1);
+
+
+#include "FirebaseESP8266.h"
+
+#define FIREBASE_HOST "final-year-proj-a1883-default-rtdb.firebaseio.com/"   // "homeautomati-544f5.firebaseio.com"  "home-control-cfa72.firebaseio.com/" //Without http:// or https:// schemes
+#define FIREBASE_AUTH "ccKbPAqd3mRa6k9MscpPH4DVcb3j0Ps1J8JU4l00"     // "8zXXD07r0aZWf5OAeglB6ghGulmW1v6OdZTK3dcm"  
+const char* ssid = "DHARANI KANNA"; //replace this with your WiFi network name
+const char* password = "Dh@ran1kanna"; //replace this with your WiFi network password
+
+const int rs = D5, en = D4, d4 = D3, d5 = D2, d6 = D1, d7 = D0;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+
+FirebaseData firebaseData;
+FirebaseData BLOOD_GROUP_Data;
+FirebaseData ADDRESS_Data;
+FirebaseData CONTACT_Data;
+FirebaseData LOCATION_Data;
+
+FirebaseJson json;
+String c = "";
+String BLOOD_TYPE = "";
+
+//#############################################################################//
+
+
+void setup() {
+  mySerial.begin(115200);
+  Serial.begin(9600); /* begin serial for debug */
+  Wire.begin(D6, D7); /* join i2c bus with SDA=D6 and SCL=D7 of NodeMCU */
+  Serial.print("Master Ready");
+  lcd.begin(16, 2);
+
+  /*
+    Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+    Firebase.reconnectWiFi(true);
+  */
+  // We start by connecting to a WiFi network
+  WiFi_access();
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+  //firebase_start();
+
+
+}
+
+//#############################################################################//
+
+
+
+//#############################################################################//
+
+String protocol() {
+  Wire.beginTransmission(8); /* begin with device address 8 */
+  //Wire.write("Hello Arduino");  /* sends hello string */
+  delay(100);
+  Wire.endTransmission();    /* stop transmitting */
+
+  Wire.requestFrom(8, 13); /* request & read data of size 13 from slave */
+  //Serial.print("Blood Group : ");
+  while (Wire.available()) {
+    c = Wire.readString();
+    //Serial.print(c);
+    return c;
+  }
+  Serial.println();
+  //delay(1000);
+}
+
+//#############################################################################//
+
+void WiFi_access() {
+
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
+     would try to act as both a client and an access-point and could cause
+     network-issues with your other WiFi-devices on your WiFi-network. */
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+}
+
+//#############################################################################//
+
+
+void lcd_data(String data) {
+  lcd.begin(16, 2);
+  lcd.clear();
+  lcd.print("Blood:");
+  lcd.println(c);
+  delay(1000);
+}
+
+//#############################################################################//
+
+void serial_data(String data) {
+  Serial.print("Blood Group:");
+  Serial.println(data);
+}
+
+//#############################################################################//
+
+void gsm_data(String data) {
+
+  if (data == "A POSITIVE")
+  {
+    SendMessage_AP();
+  }
+  else if (data == "A NEGATIVE")
+  { 
+    SendMessage_AN();
+  }
+  else if (data == "B POSITIVE")
+  {
+    SendMessage_BP();
+  }
+  else if (data == "B NEGATIVE")
+  {
+    SendMessage_BN();
+  }
+  else
+  {
+    if (Serial.available() > 0) {
+      if (Serial.read() > 0) {
+
+        RecieveMessage();
+
+      }
+    }
+  }
+}
+
+void SendMessage()
+{
+  mySerial.println("AT+CMGF=1");    //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  mySerial.println("AT+CMGS=\"+919698208798\"\r"); // Replace x with mobile number
+  delay(1000);
+  mySerial.println("Any Need blood ?");// The SMS text you want to send
+  delay(100);
+  mySerial.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+}
+void SendMessage_BP()
+{
+  mySerial.println("AT+CMGF=1");    //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  mySerial.println("AT+CMGS=\"+919698208798\"\r"); // Replace x with mobile number
+  delay(1000);
+  mySerial.println("Need of B-Positive blood Group");// The SMS text you want to send
+  delay(100);
+  mySerial.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+}
+
+void SendMessage_BN()
+{
+  mySerial.println("AT+CMGF=1");    //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  mySerial.println("AT+CMGS=\"+918248194955\"\r"); // Replace x with mobile number
+  delay(1000);
+  mySerial.println("Need of B-NEGATIVE blood Group");// The SMS text you want to send
+  delay(100);
+  mySerial.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+}
+
+void SendMessage_AP()
+{
+  mySerial.println("AT+CMGF=1");    //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  mySerial.println("AT+CMGS=\"+919944523597\"\r"); // Replace x with mobile number
+  delay(1000);
+  mySerial.println("Need of B-Negative blood Group");// The SMS text you want to send
+  delay(100);
+  mySerial.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+}
+
+void SendMessage_AN()
+{
+  mySerial.println("AT+CMGF=1");    //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  mySerial.println("AT+CMGS=\"+917510264405\"\r"); // Replace x with mobile number
+  delay(1000);
+  mySerial.println("Need of A-Negative blood Group");// The SMS text you want to send
+  delay(100);
+  mySerial.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+}
+
+void RecieveMessage()
+{
+  mySerial.println("AT+CNMI=2,2,0,0,0"); // AT Command to receive a live SMS
+  delay(1000);
+}
+
+//#############################################################################//
+
+
+void firebase_data(String data) {
+  //if (data!="Blood Request"){
+  Firebase.setString(firebaseData, "/Blood Group/", data);
+
+  //}
+  //else{
+  //  Firebase.setString(firebaseData, "/Pinstate/BLOOD_GROUP", "No Blood request found");
+  //}
+}
+
+//#############################################################################//
+
+//#############################################################################//
+
+void loop() {
+  BLOOD_TYPE = protocol();  //declaring I2C data value into a variable
+
+  serial_data(BLOOD_TYPE);           //serial visualisation
+  lcd_data(BLOOD_TYPE);    //LCD visualisation
+  gsm_data(BLOOD_TYPE);
+  firebase_data(BLOOD_TYPE);
+
+}
+
+//#############################################################################//
