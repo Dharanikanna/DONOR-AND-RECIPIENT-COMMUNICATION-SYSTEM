@@ -28,9 +28,9 @@ SoftwareSerial mySerial(3,1);
 #include "FirebaseESP8266.h"
 
 #define FIREBASE_HOST "final-year-proj-a1883-default-rtdb.firebaseio.com/"   // "homeautomati-544f5.firebaseio.com"  "home-control-cfa72.firebaseio.com/" //Without http:// or https:// schemes
-#define FIREBASE_AUTH "ccKbPAqd3mRa6k9MscpPH4DVcb3j0Ps1J8JU4l00"     // "8zXXD07r0aZWf5OAeglB6ghGulmW1v6OdZTK3dcm"  
+#define FIREBASE_AUTH "Auth key"     // ""  
 const char* ssid = "DHARANI KANNA"; //replace this with your WiFi network name
-const char* password = "Dh@ran1kanna"; //replace this with your WiFi network password
+const char* password = ""; //replace this with your WiFi network password
 
 const int rs = D5, en = D4, d4 = D3, d5 = D2, d6 = D1, d7 = D0;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
